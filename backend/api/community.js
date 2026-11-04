@@ -1,0 +1,5 @@
+const {sqlClient,ensureSchema}=require('./_lib/db');const {requireAuth}=require('./_lib/auth');const {json}=require('./_lib/response');
+module.exports=async(req,res)=>{try{await ensureSchema();const u=requireAuth(req,res);if(!u)return;const sql=sqlClient();
+if(req.method==='GET'){const r=await sql`SELECT p.id,p.content,p.created_at,u.first_name,u.last_name FROM community_posts p JOIN users u ON u.id=p.user_id ORDER BY p.created_at DESC LIMIT 30`;return json(res,200,{posts:r});}
+if(req.method==='POST'){const content=String(req.body?.content||'').trim();if(!content||content.length>500)return json(res,400,{error:'Write a message up to 500 characters.'});const r=await sql`INSERT INTO community_posts(user_id,content) VALUES(${u.id},${content}) RETURNING id,content,created_at`;return json(res,201,{post:{...r[0],first_name:u.email.split('@')[0],last_name:''},message:'Post shared with the community.'});}
+return json(res,405,{error:'Method not allowed'});}catch(e){console.error(e);return json(res,500,{error:'Could not load community.'});}};

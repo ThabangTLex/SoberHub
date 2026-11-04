@@ -1,0 +1,5 @@
+const {sqlClient,ensureSchema}=require('./_lib/db'); const {requireAuth}=require('./_lib/auth'); const {json}=require('./_lib/response');
+module.exports=async(req,res)=>{try{await ensureSchema();const u=requireAuth(req,res);if(!u)return;const sql=sqlClient();
+if(req.method==='GET'){const r=await sql`SELECT id,first_name,last_name,email,phone,role,membership_status,membership_plan,membership_expires_at FROM users WHERE id=${u.id}`;return json(res,200,{user:r[0]});}
+if(req.method==='PUT'){const {firstName,lastName,phone}=req.body||{};if(!firstName||!lastName)return json(res,400,{error:'First name and last name are required.'});const r=await sql`UPDATE users SET first_name=${firstName.trim()},last_name=${lastName.trim()},phone=${phone||null} WHERE id=${u.id} RETURNING id,first_name,last_name,email,phone,role,membership_status,membership_plan,membership_expires_at`;return json(res,200,{user:r[0],message:'Profile updated successfully.'});}
+return json(res,405,{error:'Method not allowed'});}catch(e){console.error(e);return json(res,500,{error:'Could not update profile.'});}};

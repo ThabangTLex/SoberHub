@@ -1,0 +1,5 @@
+const {sqlClient,ensureSchema}=require('./_lib/db');const {requireAuth}=require('./_lib/auth');const {json}=require('./_lib/response');
+module.exports=async(req,res)=>{try{await ensureSchema();const u=requireAuth(req,res);if(!u)return;const sql=sqlClient();
+if(req.method==='POST'){const message=String(req.body?.message||'Urgent support requested from Sober Hub member.').trim();const r=await sql`INSERT INTO emergency_requests(user_id,message) VALUES(${u.id},${message}) RETURNING id,status,created_at`;return json(res,201,{request:r[0],message:'Support request recorded. If there is immediate danger, contact local emergency services.'});}
+if(req.method==='GET'){const r=await sql`SELECT id,message,status,created_at FROM emergency_requests WHERE user_id=${u.id} ORDER BY created_at DESC LIMIT 10`;return json(res,200,{requests:r});}
+return json(res,405,{error:'Method not allowed'});}catch(e){console.error(e);return json(res,500,{error:'Could not create support request.'});}};

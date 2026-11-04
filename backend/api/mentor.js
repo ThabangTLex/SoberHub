@@ -1,0 +1,5 @@
+const {sqlClient,ensureSchema}=require('./_lib/db');const {requireAuth}=require('./_lib/auth');const {json}=require('./_lib/response');
+module.exports=async(req,res)=>{try{await ensureSchema();const u=requireAuth(req,res);if(!u)return;const sql=sqlClient();
+if(req.method==='GET'){const r=await sql`SELECT id,message,status,created_at FROM mentor_requests WHERE user_id=${u.id} ORDER BY created_at DESC LIMIT 10`;return json(res,200,{requests:r});}
+if(req.method==='POST'){const message=String(req.body?.message||'').trim();const r=await sql`INSERT INTO mentor_requests(user_id,message) VALUES(${u.id},${message||null}) RETURNING id,message,status,created_at`;return json(res,201,{request:r[0],message:'Mentor request sent.'});}
+return json(res,405,{error:'Method not allowed'});}catch(e){console.error(e);return json(res,500,{error:'Could not send mentor request.'});}};
